@@ -5,9 +5,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 //CONSTANTS (Declared first)
 const scene = new THREE.Scene()
 /* INIT PHYSICS */
-
 const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.82*5, 0), // m/s²
+  allowSleep: 1 // Disables physics for objects if they are below a certain speed ("sleepy")
 })
 
 /**
@@ -15,11 +15,12 @@ const world = new CANNON.World({
  * Parameter :
  * - Mesh : ThreeJs mesh, represents the object.
  * - halfExtents : CANNON.Vec3, represents HALF of the object's size.
- * - isStatic : True if the object doesn't move.
+ * - BodyType : True if the object doesn't move.
  * - initPos : CANNON.Vec3, Initial Position of the Object.
  */
 class ActiveObject {
   constructor(Mesh, halfExtents, isStatic, initPos) {
+    this.INITPOS = initPos
     this.MESH = Mesh
     this.HALF_EXTENTS = halfExtents
 
@@ -65,7 +66,8 @@ class PlayerObject extends ActiveObject {
     const player = new THREE.Mesh(geometry, material)
     player.castShadow = true
     super(player, new CANNON.Vec3(size / 2, size / 2, size / 2), 0, initPos)
-
+    this.objectBody.material = new CANNON.Material({friction: 0, restitution: 0}) // Prevent jittering when moving because restitution
+    console.log(this.objectBody.material)
     // Player controls
     this.spacebar_pressed = false
     this.setControl()
@@ -111,6 +113,12 @@ class PlayerObject extends ActiveObject {
       this.objectBody.applyImpulse(new CANNON.Vec3(0, 35, 0))
       this.spacebar_pressed = false
     }
+  }
+
+  respawnEvent() {
+    this.objectBody.position.copy(this.INITPOS)
+    scene.add(this.MESH)
+    world.addBody(this.objectBody)
   }
 
   deathEvent() {
@@ -159,6 +167,8 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 )
+camera.position.set( 0, 10, 10 );
+
 
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -166,19 +176,13 @@ renderer.shadowMap.enabled = true
 document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
-camera.position.y = 3
-camera.position.z = 5
+const cameraDirection = new THREE.Vector3();
+
 
 // Sets up objects
 // 1. Player
-let player = new PlayerObject(new CANNON.Vec3(0, 0, 0))
-/* PLAYER PHYSICS */
-
-
-
-
-// 2. Level Generation
-
+const playerInitialPosition = new CANNON.Vec3(0, 0, 0)
+let player = new PlayerObject(playerInitialPosition)
 
 /* PLACEHOLDER FLOOR */
 generateFloor()
@@ -187,13 +191,13 @@ generateFloor()
 light()
 
 
-let testBox = []
-for (let i = 0; i < 5; i++){
-  testBox[i] = new DeathBox(new CANNON.Vec3((i+1)*5, 1, 0), player)
-}
+// let testBox = []
+// for (let i = 0; i < 5; i++){
+//   testBox[i] = new DeathBox(new CANNON.Vec3((i+1)*5, 1, 0), player)
+// }
 
-// Timer for updating animation
-const direction = new THREE.Vector3();
+// Setup other app controls
+setupAppControls()
 
 function animate() {
   requestAnimationFrame(animate)
@@ -206,10 +210,10 @@ function animate() {
   /* CAMERA FOLLOW PLAYER */
   controls.target = player.MESH.position
   controls.update()
-  direction.subVectors(camera.position, controls.target);
-  direction.normalize().multiplyScalar(20);
-  camera.position.copy(direction.add(controls.target));
-
+  cameraDirection.subVectors(camera.position, controls.target);
+  // cameraDirection.normalize().multiplyScalar(20);
+  camera.position.copy(cameraDirection.add(controls.target));
+  debug(player.objectBody.sleepState)
 }
 animate()
 
@@ -237,13 +241,13 @@ function generateFloor() {
     shape: new CANNON.Plane(),
 
   })
+  groundBody.material = new CANNON.Material({friction: 0, restitution: 0}) // Prevent jittering when moving because restitution
 
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0) // make it face up
   floor.position.copy(groundBody.position)
   floor.quaternion.copy(groundBody.quaternion)
   scene.add(floor);
   world.addBody(groundBody)
-  console.log(floor.position)
   return groundBody
 }
 function wrapAndRepeatTexture(map) {
@@ -278,4 +282,16 @@ function shadow() {
 
 function debug(print) {
   console.log(print)
+}
+
+/**
+ * Sets up application controls other than gameplay.
+ * 
+ */
+function setupAppControls() {
+  document.addEventListener("keyup", (e) => {
+    if (e.key == 'r') {
+      player.respawnEvent()
+    };
+  })
 }
