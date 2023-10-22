@@ -2,10 +2,13 @@ import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
-//CONSTANTS
-/* Max width for each level chunk (Renders max 3 inside camera at a time) */
-const chunkX = 12
-const chunkZ = 2
+//CONSTANTS (Declared first)
+const scene = new THREE.Scene()
+/* INIT PHYSICS */
+
+const world = new CANNON.World({
+  gravity: new CANNON.Vec3(0, -9.82*5, 0), // m/s²
+})
 
 /**
  * Class for ThreeJs objects using a box body.
@@ -15,7 +18,7 @@ const chunkZ = 2
  * - isStatic : True if the object doesn't move.
  * - initPos : CANNON.Vec3, Initial Position of the Object.
  */
-class activeObject {
+class ActiveObject {
   constructor(Mesh, halfExtents, isStatic, initPos) {
     this.MESH = Mesh
     this.HALF_EXTENTS = halfExtents
@@ -23,6 +26,12 @@ class activeObject {
     // Setup initial position
     this.objectShape = new CANNON.Box(this.HALF_EXTENTS)
     this.objectBody = new CANNON.Body({ mass: 2, shape: this.objectShape })
+    if (isStatic) {
+      this.objectBody.type = CANNON.Body.STATIC
+    }
+    else {
+      this.objectBody.type = CANNON.Body.DYNAMIC
+    }
     this.MESH.position.copy(initPos)
     this.objectBody.position.copy(initPos)
     scene.add(Mesh)
@@ -48,7 +57,7 @@ class activeObject {
 
 }
 
-class playerObject extends activeObject {
+class PlayerObject extends ActiveObject {
   constructor(initPos) {
     const size = 1
     const geometry = new THREE.BoxGeometry(size, size, size)
@@ -68,7 +77,7 @@ class playerObject extends activeObject {
   
   setControl() {
     // CONTROLS
-    // https://stackoverflow.com/questions/70111463/method-not-defined-when-calling-from-inside-an-event-listener
+
     document.addEventListener("keydown", (e) => {
       if (e.key == ' ') {
         e.preventDefault();
@@ -104,14 +113,44 @@ class playerObject extends activeObject {
     }
   }
 
+  deathEvent() {
+    scene.remove(this.MESH)
+    world.removeBody(this.objectBody)
+  }
 }
 
-const scene = new THREE.Scene()
-/* INIT PHYSICS */
+class DeathBox extends ActiveObject {
+  /**
+   * Class for Death Hitbox, collision with player results in player's death.
+   * Parameter :
+   * - initPos : CANNON.Vec3, Initial Position of the Object.
+   * - playerBox : Reference to player's CANNON Body.
+   */
+  constructor(initPos, playerBox) {
+    const size = 1
+    const geometry = new THREE.BoxGeometry(size, size, size)
+    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 })
+    const deathBox = new THREE.Mesh(geometry, material)
+    super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 0, initPos)
+    this.setPLayerCollisionEvent(playerBox)
+  }
+  /**
+   * Checks if the object collides with player by checking the world's collision matrix.
+   * @param {class PlayerObject} player - Reference to player's instance
+   */
+  setPLayerCollisionEvent(player) {
+    this.objectBody.addEventListener("collide", (e) => {
+      
+      if (world.collisionMatrix.get(player.objectBody, this.objectBody)) {
+        console.log("YOU ARE DED")
+        player.deathEvent()
+      }
+    })
+  }
+  
+}
 
-const world = new CANNON.World({
-  gravity: new CANNON.Vec3(0, -9.82*5, 0), // m/s²
-})
+
 
 // Sets up camera, renderer, & camera controls
 const camera = new THREE.PerspectiveCamera(
@@ -132,7 +171,7 @@ camera.position.z = 5
 
 // Sets up objects
 // 1. Player
-let player = new playerObject(new CANNON.Vec3(0, 0, 0))
+let player = new PlayerObject(new CANNON.Vec3(0, 0, 0))
 /* PLAYER PHYSICS */
 
 
@@ -142,25 +181,16 @@ let player = new playerObject(new CANNON.Vec3(0, 0, 0))
 
 
 /* PLACEHOLDER FLOOR */
-let groundRef = generateFloor()
+generateFloor()
 
 // Sets up lighting
 light()
 
-/* Collision detection (PLACEHOLDER) 
-* Checks world's collision matrix (contains data on collisions) for player colliding with deathBox
-*/
-const size = 1
-const geometry = new THREE.BoxGeometry(size, size, size)
-const material = new THREE.MeshStandardMaterial({ color: 0xffff00 })
-const debugMesh = new THREE.Mesh(geometry, material)
-let debugBox = new activeObject(debugMesh, new CANNON.Vec3(0.5, 0.5, 0.5), 0, new CANNON.Vec3(10, 5, 0))
-player.objectBody.addEventListener("collide", function (e) {
-  if (world.collisionMatrix.get(player.objectBody, debugBox.objectBody)) {
-    console.log("HOW")
-  }
-})
 
+let testBox = []
+for (let i = 0; i < 5; i++){
+  testBox[i] = new DeathBox(new CANNON.Vec3((i+1)*5, 1, 0), player)
+}
 
 // Timer for updating animation
 const direction = new THREE.Vector3();
@@ -173,7 +203,6 @@ function animate() {
 
   /* OBJECT ANIMS + PHYSICS */
   player.updatePosition()
-  debugBox.updatePosition()
   /* CAMERA FOLLOW PLAYER */
   controls.target = player.MESH.position
   controls.update()
