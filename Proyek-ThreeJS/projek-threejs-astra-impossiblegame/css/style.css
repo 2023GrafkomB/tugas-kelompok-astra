@@ -1,0 +1,103 @@
+*{
+	padding:0;
+	margin:0;
+	box-sizing:border-box;	
+	font-family: 'Roboto', sans-serif;
+	
+}
+section{
+	background-image:linear-gradient(#2c2b2b8a,#524f4fd9),url(../Textures/test.jpg);
+	height:100vh;
+	background-position:center;
+	
+	display:flex;
+	justify-content:center;
+	align-items:center;
+}
+.play{
+	width:50px;
+	height:50px;
+	padding:10px;
+	display:flex;
+	justify-content:center;
+	align-items:center;
+	border-radius:50%;
+	border:2px solid #ffff;
+	color:#84EF8E;
+	position:relative;
+	animation:bord 2s linear infinite;
+	
+}
+.play::before{
+	content:"";
+	width:80px;
+	height:80px;
+	border-radius:50%;
+	border:2px solid #F8E60C;
+	position:absolute;
+	
+	animation:bg 2s linear infinite;
+	
+}
+.play:hover{
+	animation:hov 3s linear infinite;
+}
+.play i{
+	animation:icon 2s linear infinite;
+}
+
+@keyframes icon{
+	0%{
+		transform:scale(0);
+		color:#84EF8E;
+	}
+	50%{
+		transform:scale(2);
+		color:#88E62A;
+	}
+	100%{
+		transform:scale(3);
+		color:#6BD105;
+	}
+}
+@keyframes bg{
+	0%{
+		transform:scale(0);
+	}
+	50%{
+		
+		transform:scale(1);
+		border:5px solid red;
+	}
+	100%{
+		
+		transform:scale(1.5);
+		border:10px solid green;
+	}
+}
+@keyframes bord{
+	0%{
+		background-color:#ffff;
+	}
+	50%{
+		
+		background-color:#DDDAB7l;
+	}
+	100%{
+		
+		background-color:#ABAAA5;
+	}
+}
+@keyframes hov{
+	0%{
+		transform:rotate(0deg);
+	}
+	50%{
+		
+		transform:rotate(180deg);
+	}
+	100%{
+		
+		transform:rotate(460deg);
+	}
+}

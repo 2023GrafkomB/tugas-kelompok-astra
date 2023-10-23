@@ -6,9 +6,17 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 const scene = new THREE.Scene()
 /* INIT PHYSICS */
 const world = new CANNON.World({
-  gravity: new CANNON.Vec3(0, -9.82*5, 0), // m/s²
+  gravity: new CANNON.Vec3(0, -9.82 * 5, 0), // m/s²
   allowSleep: 1 // Disables physics for objects if they are below a certain speed ("sleepy")
 })
+
+/* GEOMETRIES & MATERIALS THAT ARE REUSED */
+class SpikeGeo {
+  static radius = 1.0;
+  static height = 1.0;
+  static radialSegments = 4;
+  static geometry = new THREE.ConeGeometry(this.radius, this.height, this.radialSegments);
+}
 
 /**
  * Class for ThreeJs objects using a box body.
@@ -68,7 +76,7 @@ class PlayerObject extends ActiveObject {
     const player = new THREE.Mesh(geometry, material)
     player.castShadow = true
     super(player, new CANNON.Vec3(size / 2, size / 2, size / 2), 0, initPos)
-    this.objectBody.material = new CANNON.Material({friction: 0, restitution: 0}) // Prevent jittering when moving because restitution
+    this.objectBody.material = new CANNON.Material({ friction: 0, restitution: 0 }) // Prevent jittering when moving because restitution
     console.log(this.objectBody.material)
     // Player controls
     this.spacebar_pressed = false
@@ -79,7 +87,7 @@ class PlayerObject extends ActiveObject {
     this.canJump = true
 
   }
-  
+
   setControl() {
     // CONTROLS
 
@@ -102,7 +110,7 @@ class PlayerObject extends ActiveObject {
     super.updatePosition(Pos)
     // MOVEMENT
     this.objectBody.velocity.x = 5 // Kecepatan dasar
-    
+
     this.objectBody.position.z = 0
 
     this.objectBody.quaternion.x = 0
@@ -142,11 +150,13 @@ class DeathBox extends ActiveObject {
    * - playerBox : Reference to player's CANNON Body.
    */
   constructor(initPos, playerBox) {
-    const size = 1
-    const geometry = new THREE.BoxGeometry(size, size, size)
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 })
-    const deathBox = new THREE.Mesh(geometry, material)
-    super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 0, initPos)
+    const size = SpikeGeo.radius
+    const truePosition = initPos
+    truePosition.x += size / 2
+    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
+    const deathBox = new THREE.Mesh(SpikeGeo.geometry, material)
+    deathBox.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398) // So it's in the right angle
+    super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 1, truePosition)
     this.setPLayerCollisionEvent(playerBox)
   }
   /**
@@ -155,14 +165,14 @@ class DeathBox extends ActiveObject {
    */
   setPLayerCollisionEvent(player) {
     this.objectBody.addEventListener("collide", (e) => {
-      
+
       if (world.collisionMatrix.get(player.objectBody, this.objectBody)) {
         console.log("YOU ARE DED")
         player.deathEvent()
       }
     })
   }
-  
+
 }
 
 class Platform extends ActiveObject {
@@ -176,33 +186,45 @@ class Platform extends ActiveObject {
   constructor(initPos, playerBox, length) {
     const size = 1
     const truePosition = initPos
-    truePosition.x += length/2
+    truePosition.x += length / 2
     const geometry = new THREE.BoxGeometry(length, size, size)
     const material = new THREE.MeshStandardMaterial({ color: 0x00ffff })
-    const deathBox = new THREE.Mesh(geometry, material)
-    super(deathBox, new CANNON.Vec3(length / 2, size / 2, size / 2), 1, initPos)
-    this.objectBody.material = new CANNON.Material({friction: 0, restitution: 0})
+    const platform = new THREE.Mesh(geometry, material)
+    super(platform, new CANNON.Vec3(length / 2, size / 2, size / 2), 1, truePosition)
+    this.objectBody.material = new CANNON.Material({ friction: 0, restitution: 0 })
 
     this.setPLayerCollisionEvent(playerBox)
   }
 
-    /**
-   * Checks if the object collides with player by checking the world's collision matrix.
-   * @param {class PlayerObject} player - Reference to player's instance
-   */
-    setPLayerCollisionEvent(player) {
-      this.objectBody.addEventListener("collide", (e) => {
-        
-        if (world.collisionMatrix.get(player.objectBody, this.objectBody)) {
-          console.log("ON A PLATFORM")
+  /**
+ * Checks if the object collides with player by checking the world's collision matrix.
+ * @param {class PlayerObject} player - Reference to player's instance
+ */
+  setPLayerCollisionEvent(player) {
+    this.objectBody.addEventListener("collide", (e) => {
+
+      if (world.collisionMatrix.get(player.objectBody, this.objectBody)) {
+        if (player.objectBody.position.y - this.objectBody.position.y > 0.5) {
           player.canJump = true
         }
-      })
-    }
+        else {
+          console.log("kek")
+          player.deathEvent()
+        }
+      }
+    })
+  }
 }
 
 /* START OF MAIN */
-
+const loader = new THREE.TextureLoader();
+const texture = loader.load(
+  './Textures/test.jpg',
+  () => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    scene.background = texture;
+  });
 // Sets up camera, renderer, & camera controls
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -210,7 +232,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 )
-camera.position.set( 0, 10, 10 );
+camera.position.set(0, 10, 10);
 
 
 const renderer = new THREE.WebGLRenderer()
@@ -230,7 +252,13 @@ let player = new PlayerObject(playerInitialPosition)
 /**
  * GENERATE MAP START
  */
-
+let singlePlat0_0 = new Platform(new CANNON.Vec3(14, 4, 0), player, 1)
+let singlePlat1_0 = new Platform(new CANNON.Vec3(6, 3, 0), player, 1)
+let fivePlat0_0 = new Platform(new CANNON.Vec3(9, 3, 0), player, 5)
+let singlePlat2_0 = new Platform(new CANNON.Vec3(5, 2, 0), player, 1)
+let deathBox0_0 = new DeathBox(new CANNON.Vec3(7, 2, 0), player)
+let deathBox1_0 = new DeathBox(new CANNON.Vec3(8, 2, 0), player)
+let fivePlat1_0 = new Platform(new CANNON.Vec3(0, 1, 0), player, 5)
 /**
  * GENERATE MAP END
  */
@@ -238,14 +266,9 @@ let player = new PlayerObject(playerInitialPosition)
 /* DEATH FLOOR */
 generateFloor(player)
 
-// Sets up lighting
+// Sets up effects
 light()
-
-
-// let testBox = []
-// for (let i = 0; i < 5; i++){
-//   testBox[i] = new DeathBox(new CANNON.Vec3((i+1)*5, 1, 0), player)
-// }
+shadow()
 
 // Setup other app controls
 setupAppControls()
@@ -296,11 +319,11 @@ function generateFloor(player) {
     shape: new CANNON.Plane(),
 
   })
-  groundBody.material = new CANNON.Material({friction: 0, restitution: 0}) // Prevent jittering when moving because restitution
+  groundBody.material = new CANNON.Material({ friction: 0, restitution: 0 }) // Prevent jittering when moving because restitution
 
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0) // make it face up
 
-  groundBody.position.x += WIDTH/2
+  groundBody.position.x += WIDTH / 2
   groundBody.position.y -= 10
   floor.position.copy(groundBody.position)
   floor.quaternion.copy(groundBody.quaternion)
@@ -309,7 +332,7 @@ function generateFloor(player) {
 
   // Kills player when it touches
   groundBody.addEventListener("collide", (e) => {
-      
+
     if (world.collisionMatrix.get(player.objectBody, groundBody)) {
       console.log("YOU ARE DED")
       player.deathEvent()
@@ -324,8 +347,8 @@ function wrapAndRepeatTexture(map) {
 }
 function light() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  var dirLight = new THREE.DirectionalLight(0xffffff, 1);
-  dirLight.position.set(60, 100, 20);
+  var dirLight = new THREE.DirectionalLight(0xeb348c, 2);
+  dirLight.position.set(0, 100, -40);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = 50;
   dirLight.shadow.camera.bottom = -50;
@@ -336,12 +359,24 @@ function light() {
   dirLight.shadow.mapSize.width = 4096;
   dirLight.shadow.mapSize.height = 4096;
   scene.add(dirLight);
+  var dirLight2 = new THREE.DirectionalLight(0xf0d9ff, 2);
+  dirLight2.position.set(0, 100, 40);
+  dirLight2.castShadow = true;
+  dirLight2.shadow.camera.top = 50;
+  dirLight2.shadow.camera.bottom = -50;
+  dirLight2.shadow.camera.left = -50;
+  dirLight2.shadow.camera.right = 50;
+  dirLight2.shadow.camera.near = 0.1;
+  dirLight2.shadow.camera.far = 200;
+  dirLight2.shadow.mapSize.width = 4096;
+  dirLight2.shadow.mapSize.height = 4096;
+  scene.add(dirLight2);
   // scene.add( new THREE.CameraHelper(dirLight.shadow.camera))
 }
 
 function shadow() {
   {
-    const color = 0x000c29;
+    const color = 0xffbfed;
     const near = 5;
     const far = 50;
     scene.fog = new THREE.Fog(color, near, far);
