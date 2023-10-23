@@ -9,6 +9,10 @@ TODO :
 - [X] Event Reset objek (player)
 - [X] Gerakan player tidak gemetaran/nyangkut2
 - [X] Buat objek platform dengan tekstur yang repeat
+- [ ] Ubah supaya kelas2 reuse texture dan material
+- [ ] Ubah kelas supaya hanya 2d (size y dan z = 1, size x bisa berubah)
+- [ ] Ubah DeathBox supaya ukuran tetap 1x1x1 tapi berbentuk spike
+- [ ] Buat objek platform dengan tekstur yang repeat (mungkin 1x1x1?)
 
 - [ ] BUAT LEVEL
 - [ ] Model/Tekstur DeathBox (jadi spike) + platform
