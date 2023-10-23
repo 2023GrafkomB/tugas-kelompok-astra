@@ -8,6 +8,7 @@ TODO :
 - [X] Hit detection, jika player tabrakan deathbox apapun, trigger event
 - [X] Event Reset objek (player)
 - [X] Gerakan player tidak gemetaran/nyangkut2
+- [ ] Ubah supaya kelas2 reuse texture dan material
 - [ ] Ubah kelas supaya hanya 2d (size y dan z = 1, size x bisa berubah)
 - [ ] Ubah DeathBox supaya ukuran tetap 1x1x1 tapi berbentuk spike
 - [ ] Buat objek platform dengan tekstur yang repeat (mungkin 1x1x1?)
