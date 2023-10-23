@@ -26,12 +26,12 @@ class ActiveObject {
 
     // Setup initial position
     this.objectShape = new CANNON.Box(this.HALF_EXTENTS)
-    this.objectBody = new CANNON.Body({ mass: 2, shape: this.objectShape })
-    if (isStatic) {
-      this.objectBody.type = CANNON.Body.STATIC
+    this.objectBody
+    if (isStatic == 1) {
+      this.objectBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: this.objectShape })
     }
     else {
-      this.objectBody.type = CANNON.Body.DYNAMIC
+      this.objectBody = new CANNON.Body({ mass: 2, shape: this.objectShape })
     }
     this.MESH.position.copy(initPos)
     this.objectBody.position.copy(initPos)
@@ -74,6 +74,7 @@ class PlayerObject extends ActiveObject {
 
     // Player status
     this.isDead = false
+    this.canJump = true
 
   }
   
@@ -98,7 +99,7 @@ class PlayerObject extends ActiveObject {
   updatePosition(Pos) {
     super.updatePosition(Pos)
     // MOVEMENT
-    this.objectBody.velocity.x = 5 // Kecepatan dasar
+    this.objectBody.velocity.x = 4 // Kecepatan dasar
     
     this.objectBody.position.z = 0
 
@@ -108,10 +109,11 @@ class PlayerObject extends ActiveObject {
   }
 
   updateControl() {
-    if (this.spacebar_pressed && this.objectBody.position.y < 1) {
+    if (this.spacebar_pressed && this.canJump) {
       this.objectBody.velocity.y = 0
       this.objectBody.applyImpulse(new CANNON.Vec3(0, 35, 0))
       this.spacebar_pressed = false
+      this.canJump = false
     }
   }
 
@@ -158,6 +160,43 @@ class DeathBox extends ActiveObject {
   
 }
 
+class Platform extends ActiveObject {
+  /**
+   * Class for platform, collision with player on it's sides results in death.
+   * Parameter :
+   * - initPos : CANNON.Vec3, Initial Position of the Object.
+   * - playerBox : Reference to player's CANNON Body.
+   * - @param {BigInt} length : Size in the x axis
+   */
+  constructor(initPos, playerBox, length) {
+    const size = 1
+    const truePosition = initPos
+    truePosition.x += 5
+    truePosition.y += 0.5
+    const geometry = new THREE.BoxGeometry(length, size, size)
+    const material = new THREE.MeshStandardMaterial({ color: 0x00ffff })
+    const deathBox = new THREE.Mesh(geometry, material)
+    super(deathBox, new CANNON.Vec3(length / 2, size / 2, size / 2), 1, initPos)
+    this.objectBody.material = new CANNON.Material({friction: 0, restitution: 0})
+
+    this.setPLayerCollisionEvent(playerBox)
+  }
+
+    /**
+   * Checks if the object collides with player by checking the world's collision matrix.
+   * @param {class PlayerObject} player - Reference to player's instance
+   */
+    setPLayerCollisionEvent(player) {
+      this.objectBody.addEventListener("collide", (e) => {
+        
+        if (world.collisionMatrix.get(player.objectBody, this.objectBody)) {
+          console.log("ON A PLATFORM")
+          player.canJump = true
+        }
+      })
+    }
+}
+
 
 
 // Sets up camera, renderer, & camera controls
@@ -183,6 +222,7 @@ const cameraDirection = new THREE.Vector3();
 // 1. Player
 const playerInitialPosition = new CANNON.Vec3(0, 0, 0)
 let player = new PlayerObject(playerInitialPosition)
+let test = new Platform(playerInitialPosition, player, 5)
 
 /* PLACEHOLDER FLOOR */
 generateFloor()
@@ -207,6 +247,7 @@ function animate() {
 
   /* OBJECT ANIMS + PHYSICS */
   player.updatePosition()
+  test.updatePosition()
   /* CAMERA FOLLOW PLAYER */
   controls.target = player.MESH.position
   controls.update()
