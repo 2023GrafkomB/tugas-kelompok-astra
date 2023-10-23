@@ -21,6 +21,8 @@ const world = new CANNON.World({
 class ActiveObject {
   constructor(Mesh, halfExtents, isStatic, initPos) {
     this.INITPOS = initPos
+    this.INITPOS.y += 0.5
+
     this.MESH = Mesh
     this.HALF_EXTENTS = halfExtents
 
@@ -99,13 +101,14 @@ class PlayerObject extends ActiveObject {
   updatePosition(Pos) {
     super.updatePosition(Pos)
     // MOVEMENT
-    this.objectBody.velocity.x = 4 // Kecepatan dasar
+    this.objectBody.velocity.x = 5 // Kecepatan dasar
     
     this.objectBody.position.z = 0
 
     this.objectBody.quaternion.x = 0
     this.objectBody.quaternion.y = 0
     this.objectBody.quaternion.z = 0
+    this.MESH.quaternion.copy(this.objectBody.quaternion)
   }
 
   updateControl() {
@@ -119,6 +122,8 @@ class PlayerObject extends ActiveObject {
 
   respawnEvent() {
     this.objectBody.position.copy(this.INITPOS)
+    this.objectBody.velocity = new CANNON.Vec3(0, 0, 0)
+    console.log(this.objectBody.position)
     scene.add(this.MESH)
     world.addBody(this.objectBody)
   }
@@ -164,15 +169,14 @@ class Platform extends ActiveObject {
   /**
    * Class for platform, collision with player on it's sides results in death.
    * Parameter :
-   * - initPos : CANNON.Vec3, Initial Position of the Object.
+   * - initPos : CANNON.Vec3, Initial Position of the Object starting for the leftmost point.
    * - playerBox : Reference to player's CANNON Body.
    * - @param {BigInt} length : Size in the x axis
    */
   constructor(initPos, playerBox, length) {
     const size = 1
     const truePosition = initPos
-    truePosition.x += 5
-    truePosition.y += 0.5
+    truePosition.x += length/2
     const geometry = new THREE.BoxGeometry(length, size, size)
     const material = new THREE.MeshStandardMaterial({ color: 0x00ffff })
     const deathBox = new THREE.Mesh(geometry, material)
@@ -197,7 +201,7 @@ class Platform extends ActiveObject {
     }
 }
 
-
+/* START OF MAIN */
 
 // Sets up camera, renderer, & camera controls
 const camera = new THREE.PerspectiveCamera(
@@ -219,13 +223,20 @@ const cameraDirection = new THREE.Vector3();
 
 
 // Sets up objects
-// 1. Player
-const playerInitialPosition = new CANNON.Vec3(0, 0, 0)
+// Player
+const playerInitialPosition = new CANNON.Vec3(0, 2, 0)
 let player = new PlayerObject(playerInitialPosition)
-let test = new Platform(playerInitialPosition, player, 5)
 
-/* PLACEHOLDER FLOOR */
-generateFloor()
+/**
+ * GENERATE MAP START
+ */
+
+/**
+ * GENERATE MAP END
+ */
+
+/* DEATH FLOOR */
+generateFloor(player)
 
 // Sets up lighting
 light()
@@ -247,21 +258,24 @@ function animate() {
 
   /* OBJECT ANIMS + PHYSICS */
   player.updatePosition()
-  test.updatePosition()
   /* CAMERA FOLLOW PLAYER */
   controls.target = player.MESH.position
   controls.update()
   cameraDirection.subVectors(camera.position, controls.target);
-  // cameraDirection.normalize().multiplyScalar(20);
+  cameraDirection.normalize().multiplyScalar(20);
   camera.position.copy(cameraDirection.add(controls.target));
-  debug(player.objectBody.sleepState)
+  debug(controls.target)
 }
 animate()
 
 
 /* Functions */
 
-function generateFloor() {
+/**
+ * Generates death hitbox that covers the bottom of the level.
+ * player - Reference to player object
+ */
+function generateFloor(player) {
   // TEXTURES
   var textureLoader = new THREE.TextureLoader();
   var placeholder = textureLoader.load("./Textures/placeholder.png");
@@ -285,10 +299,23 @@ function generateFloor() {
   groundBody.material = new CANNON.Material({friction: 0, restitution: 0}) // Prevent jittering when moving because restitution
 
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0) // make it face up
+
+  groundBody.position.x += WIDTH/2
+  groundBody.position.y -= 10
   floor.position.copy(groundBody.position)
   floor.quaternion.copy(groundBody.quaternion)
   scene.add(floor);
   world.addBody(groundBody)
+
+  // Kills player when it touches
+  groundBody.addEventListener("collide", (e) => {
+      
+    if (world.collisionMatrix.get(player.objectBody, groundBody)) {
+      console.log("YOU ARE DED")
+      player.deathEvent()
+    }
+  })
+
   return groundBody
 }
 function wrapAndRepeatTexture(map) {

@@ -8,17 +8,12 @@ TODO :
 - [X] Hit detection, jika player tabrakan deathbox apapun, trigger event
 - [X] Event Reset objek (player)
 - [X] Gerakan player tidak gemetaran/nyangkut2
-- [ ] Ubah kelas supaya hanya 2d (size y dan z = 1, size x bisa berubah)
-- [ ] Ubah DeathBox supaya ukuran tetap 1x1x1 tapi berbentuk spike
-- [ ] Buat objek platform dengan tekstur yang repeat (mungkin 1x1x1?)
+- [X] Buat objek platform dengan tekstur yang repeat
 
 - [ ] BUAT LEVEL
-
-
+- [ ] Model/Tekstur DeathBox (jadi spike) + platform
 - [ ] Ganti player model + tambah animasi pakai mixamo
-- [ ] Player bisa bergerak 3D (tidak hanya 2D) mengikuti rute tertentu dan tidak pergi dari rute tersebut.
-- [ ] Kelas bounce pad :v
-
+- [ ] Implementasi aspek ThreeJs lain sesuai materi
 
 Important notes :
 
