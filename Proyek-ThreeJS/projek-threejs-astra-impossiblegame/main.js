@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 //CONSTANTS (Declared first)
 const scene = new THREE.Scene()
@@ -16,7 +17,7 @@ class Spike {
   static height = 0.5;
   static radialSegments = 4;
   static geometry = new THREE.ConeGeometry(this.radius, this.height, this.radialSegments);
-  static material = new THREE.MeshStandardMaterial({ color: 0xff0000 })
+  static material = new THREE.MeshToonMaterial()
 }
 
 class PlatformData {
@@ -29,6 +30,25 @@ class PlayerData {
   static rough =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_orm.png");
 }
 
+/**
+ * Class to load GLTF
+ */
+class loadGLTF {
+  constructor(){
+    this.init()
+  }
+
+  async init(){
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync('./geometry-dash-3d-kit/source/model.gltf');
+    let mesh = gltf.scene.getObjectByName( 'DASH' );
+    mesh.position.copy(new THREE.Vector3(25, 10, -50))
+    console.log(mesh)
+    mesh.scale.copy(new THREE.Vector3(100, 100, 100))
+    mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398*4)
+    scene.add(mesh)
+  }
+}
 
 /**
  * Class for ThreeJs objects using a box body.
@@ -142,6 +162,8 @@ class PlayerObject extends ActiveObject {
       this.objectBody.applyImpulse(new CANNON.Vec3(0, 35, 0))
       this.spacebar_pressed = false
       this.canJump = false
+      this.objectBody.angularVelocity = new CANNON.Vec3(0,0,0)
+      this.objectBody.applyTorque(new CANNON.Vec3(0, 0, -100))
     }
   }
 
@@ -172,6 +194,7 @@ class DeathBox extends ActiveObject {
     truePosition.x += Spike.radius / 2
     const material = Spike.material
     const deathBox = new THREE.Mesh(Spike.geometry, material)
+    deathBox.castShadow = true
     deathBox.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398) // So it's in the right angle
     super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 1, truePosition)
     this.setPLayerCollisionEvent(playerBox)
@@ -316,6 +339,8 @@ let singlePlat0_29 = new Platform(new CANNON.Vec3(59, 8, 0), player, 1)
 let singlePlat0_30 = new Platform(new CANNON.Vec3(60, 8, 0), player, 1)
 let deathBox0_7 = new DeathBox(new CANNON.Vec3(61, 8, 0), player)
 
+
+let model3D = new loadGLTF()
 /**
  * GENERATE MAP END
  */
@@ -342,7 +367,7 @@ function animate() {
   controls.target = player.MESH.position
   controls.update()
   cameraDirection.subVectors(camera.position, controls.target);
-  // cameraDirection.normalize().multiplyScalar(20);
+  cameraDirection.normalize().multiplyScalar(10);
   camera.position.copy(cameraDirection.add(controls.target));
 }
 animate()
@@ -400,7 +425,7 @@ function wrapAndRepeatTexture(map, repeat) {
 function light() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   var dirLight = new THREE.DirectionalLight(0xeb348c, 2);
-  dirLight.position.set(0, 100, -40);
+  dirLight.position.set(0, 10, 40);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = 50;
   dirLight.shadow.camera.bottom = -50;
@@ -412,7 +437,7 @@ function light() {
   dirLight.shadow.mapSize.height = 4096;
   scene.add(dirLight);
   var dirLight2 = new THREE.DirectionalLight(0xf0d9ff, 2);
-  dirLight2.position.set(0, 100, 40);
+  dirLight2.position.set(0, 10, -40);
   dirLight2.castShadow = true;
   dirLight2.shadow.camera.top = 50;
   dirLight2.shadow.camera.bottom = -50;
