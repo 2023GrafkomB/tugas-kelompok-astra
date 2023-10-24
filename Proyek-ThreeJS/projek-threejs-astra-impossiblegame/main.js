@@ -20,7 +20,13 @@ class Spike {
 }
 
 class PlatformData {
-  static placeholder =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_albedo.png");
+  static placeholder =  new THREE.TextureLoader().load("./Textures/placeholder.png");
+}
+
+class PlayerData {
+  static albedo =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_albedo.png");
+  static normal =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_normal.png");
+  static rough =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_orm.png");
 }
 
 
@@ -78,7 +84,12 @@ class PlayerObject extends ActiveObject {
   constructor(initPos) {
     const size = 1
     const geometry = new THREE.BoxGeometry(size, size, size)
-    const material = new THREE.MeshStandardMaterial({ color: 0xffff00 })
+    const material = new THREE.MeshStandardMaterial({ 
+      map: PlayerData.albedo,
+      normalMap: PlayerData.normal,
+      roughnessMap: PlayerData.rough,
+      metalnessMap: PlayerData.normal 
+    })
     const player = new THREE.Mesh(geometry, material)
     player.castShadow = true
     super(player, new CANNON.Vec3(size / 2, size / 2, size / 2), 0, initPos)
@@ -199,8 +210,6 @@ class Platform extends ActiveObject {
     const platform = new THREE.Mesh(geometry, material)
     super(platform, new CANNON.Vec3(length / 2, size / 2, size / 2), 1, truePosition)
     this.objectBody.material = new CANNON.Material({ friction: 0, restitution: 0 })
-
-    wrapAndRepeatTexture(material.map, length)
     this.setPLayerCollisionEvent(playerBox)
   }
 
@@ -226,12 +235,12 @@ class Platform extends ActiveObject {
 
 /* START OF MAIN */
 const loader = new THREE.TextureLoader();
-const texture = loader.load(
+const skyBox = loader.load(
   './Textures/test.jpg',
   () => {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    scene.background = texture;
+    skyBox.mapping = THREE.EquirectangularReflectionMapping;
+    skyBox.colorSpace = THREE.SRGBColorSpace;
+    scene.background = skyBox;
   });
 // Sets up camera, renderer, & camera controls
 const camera = new THREE.PerspectiveCamera(
@@ -386,7 +395,7 @@ function generateFloor(player) {
 }
 function wrapAndRepeatTexture(map, repeat) {
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
-  map.repeat.x = map.repeat.y = repeat;
+  map.repeat.x = repeat;
 }
 function light() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
