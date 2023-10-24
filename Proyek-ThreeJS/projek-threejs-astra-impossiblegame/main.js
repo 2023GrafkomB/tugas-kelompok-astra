@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 //CONSTANTS (Declared first)
 const scene = new THREE.Scene()
@@ -17,7 +16,7 @@ class Spike {
   static height = 0.5;
   static radialSegments = 4;
   static geometry = new THREE.ConeGeometry(this.radius, this.height, this.radialSegments);
-  static material = new THREE.MeshToonMaterial()
+  static material = new THREE.MeshStandardMaterial({ color: 0xff0000 })
 }
 
 class PlatformData {
@@ -30,25 +29,6 @@ class PlayerData {
   static rough =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_orm.png");
 }
 
-/**
- * Class to load GLTF
- */
-class loadGLTF {
-  constructor(){
-    this.init()
-  }
-
-  async init(){
-    const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync('./geometry-dash-3d-kit/source/model.gltf');
-    let mesh = gltf.scene.getObjectByName( 'DASH' );
-    mesh.position.copy(new THREE.Vector3(25, 10, -50))
-    console.log(mesh)
-    mesh.scale.copy(new THREE.Vector3(100, 100, 100))
-    mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398*4)
-    scene.add(mesh)
-  }
-}
 
 /**
  * Class for ThreeJs objects using a box body.
@@ -162,8 +142,6 @@ class PlayerObject extends ActiveObject {
       this.objectBody.applyImpulse(new CANNON.Vec3(0, 35, 0))
       this.spacebar_pressed = false
       this.canJump = false
-      this.objectBody.angularVelocity = new CANNON.Vec3(0,0,0)
-      this.objectBody.applyTorque(new CANNON.Vec3(0, 0, -100))
     }
   }
 
@@ -194,7 +172,6 @@ class DeathBox extends ActiveObject {
     truePosition.x += Spike.radius / 2
     const material = Spike.material
     const deathBox = new THREE.Mesh(Spike.geometry, material)
-    deathBox.castShadow = true
     deathBox.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398) // So it's in the right angle
     super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 1, truePosition)
     this.setPLayerCollisionEvent(playerBox)
@@ -320,16 +297,12 @@ let singlePlat0_11 = new Platform(new CANNON.Vec3(40, 6, 0), player, 1)
 let singlePlat0_12 = new Platform(new CANNON.Vec3(41, 6, 0), player, 1)
 let singlePlat0_13 = new Platform(new CANNON.Vec3(42, 7, 0), player, 1)
 let singlePlat0_14 = new Platform(new CANNON.Vec3(43, 7, 0), player, 1)
-let fivePlat0_3 = new Platform(new CANNON.Vec3(43, 6, 0), player, 5)
-let singlePlat0_16 = new Platform(new CANNON.Vec3(44, 6, 0), player, 1)
-let singlePlat0_17 = new Platform(new CANNON.Vec3(45, 6, 0), player, 1)
-let singlePlat0_18 = new Platform(new CANNON.Vec3(46, 6, 0), player, 1)
-let singlePlat0_19 = new Platform(new CANNON.Vec3(48, 7, 0), player, 1)
-let singlePlat0_20 = new Platform(new CANNON.Vec3(49, 7, 0), player, 1)
-let singlePlat0_21 = new Platform(new CANNON.Vec3(50, 6, 0), player, 1)
-let singlePlat0_22 = new Platform(new CANNON.Vec3(51, 6, 0), player, 1)
-let singlePlat0_23 = new Platform(new CANNON.Vec3(52, 7, 0), player, 1)
-let singlePlat0_24 = new Platform(new CANNON.Vec3(53, 7, 0), player, 1)
+let fivePlat0_3 = new Platform(new CANNON.Vec3(44, 6, 0), player, 5)
+let singlePlat0_22 = new Platform(new CANNON.Vec3(49, 7, 0), player, 1)
+let singlePlat0_21 = new Platform(new CANNON.Vec3(50, 7, 0), player, 1)
+let singlePlat0_23 = new Platform(new CANNON.Vec3(51, 7, 0), player, 1)
+let deathBox0_8 = new DeathBox(new CANNON.Vec3(52, 7, 0), player)
+let deathBox1_9 = new DeathBox(new CANNON.Vec3(52.9, 7, 0), player)
 let singlePlat0_25 = new Platform(new CANNON.Vec3(54, 7, 0), player, 1)
 let singlePlat0_26 = new Platform(new CANNON.Vec3(55, 7, 0), player, 1)
 let fivePlat0_4 = new Platform(new CANNON.Vec3(56, 8, 0), player, 5)
@@ -338,9 +311,44 @@ let singlePlat0_28 = new Platform(new CANNON.Vec3(58, 8, 0), player, 1)
 let singlePlat0_29 = new Platform(new CANNON.Vec3(59, 8, 0), player, 1)
 let singlePlat0_30 = new Platform(new CANNON.Vec3(60, 8, 0), player, 1)
 let deathBox0_7 = new DeathBox(new CANNON.Vec3(61, 8, 0), player)
+let singlePlat0_24 = new Platform(new CANNON.Vec3(62, 8, 0), player, 1)
+let singlePlat0_31 = new Platform(new CANNON.Vec3(63, 8, 0), player, 1)
+let singlePlat0_32 = new Platform(new CANNON.Vec3(64, 9, 0), player, 1)
+let singlePlat0_33 = new Platform(new CANNON.Vec3(65, 9, 0), player, 1)
+let singlePlat0_34 = new Platform(new CANNON.Vec3(66, 9, 0), player, 1)
+let singlePlat0_35 = new Platform(new CANNON.Vec3(67, 8, 0), player, 1)
+let singlePlat0_36 = new Platform(new CANNON.Vec3(68, 8, 0), player, 1)
+let singlePlat0_37 = new Platform(new CANNON.Vec3(69, 8, 0), player, 1)
+let singlePlat0_38 = new Platform(new CANNON.Vec3(70, 7, 0), player, 1)
+let singlePlat0_39 = new Platform(new CANNON.Vec3(71, 7, 0), player, 1)
+let singlePlat0_40 = new Platform(new CANNON.Vec3(72, 6, 0), player, 1)
+let singlePlat0_41 = new Platform(new CANNON.Vec3(73, 6, 0), player, 1)
+let singlePlat0_42 = new Platform(new CANNON.Vec3(74, 6, 0), player, 1)
+let singlePlat0_43 = new Platform(new CANNON.Vec3(75, 5, 0), player, 1)
+let singlePlat0_44 = new Platform(new CANNON.Vec3(76, 5, 0), player, 1)
+let singlePlat0_45 = new Platform(new CANNON.Vec3(77, 5, 0), player, 1)
+let singlePlat0_46 = new Platform(new CANNON.Vec3(78, 4, 0), player, 1)
+let singlePlat0_47 = new Platform(new CANNON.Vec3(79, 4, 0), player, 1)
+let singlePlat0_48 = new Platform(new CANNON.Vec3(86, 3, 0), player, 1)
+let singlePlat0_49 = new Platform(new CANNON.Vec3(85, 3, 0), player, 1)
+let fivePlat0_5 = new Platform(new CANNON.Vec3(80, 3, 0), player, 5)
+let singlePlat0_63 = new Platform(new CANNON.Vec3(87, 3, 0), player, 1)
+let singlePlat0_50 = new Platform(new CANNON.Vec3(88, 4, 0), player, 1)
+let singlePlat0_51 = new Platform(new CANNON.Vec3(89, 4, 0), player, 1)
+let singlePlat0_52 = new Platform(new CANNON.Vec3(90, 3, 0), player, 1)
+let singlePlat0_53 = new Platform(new CANNON.Vec3(91, 3, 0), player, 1)
+let singlePlat0_54 = new Platform(new CANNON.Vec3(92, 4, 0), player, 1)
+let singlePlat0_55 = new Platform(new CANNON.Vec3(93, 4, 0), player, 1)
+let singlePlat0_56 = new Platform(new CANNON.Vec3(94, 5, 0), player, 1)
+let singlePlat0_57 = new Platform(new CANNON.Vec3(95, 5, 0), player, 1)
+let deathBox0_10 = new DeathBox(new CANNON.Vec3(96, 5, 0), player)
+let deathBox0_11 = new DeathBox(new CANNON.Vec3(96.9, 5, 0), player)
+let singlePlat0_58 = new Platform(new CANNON.Vec3(97, 5, 0), player, 1)
+let singlePlat0_59 = new Platform(new CANNON.Vec3(98, 5, 0), player, 1)
+let singlePlat0_60 = new Platform(new CANNON.Vec3(99, 6, 0), player, 1)
+let singlePlat0_61 = new Platform(new CANNON.Vec3(100, 6, 0), player, 1)
+let singlePlat0_62 = new Platform(new CANNON.Vec3(101, 6, 0), player, 1)
 
-
-let model3D = new loadGLTF()
 /**
  * GENERATE MAP END
  */
@@ -367,7 +375,7 @@ function animate() {
   controls.target = player.MESH.position
   controls.update()
   cameraDirection.subVectors(camera.position, controls.target);
-  cameraDirection.normalize().multiplyScalar(10);
+  // cameraDirection.normalize().multiplyScalar(20);
   camera.position.copy(cameraDirection.add(controls.target));
 }
 animate()
@@ -425,7 +433,7 @@ function wrapAndRepeatTexture(map, repeat) {
 function light() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   var dirLight = new THREE.DirectionalLight(0xeb348c, 2);
-  dirLight.position.set(0, 10, 40);
+  dirLight.position.set(0, 100, -40);
   dirLight.castShadow = true;
   dirLight.shadow.camera.top = 50;
   dirLight.shadow.camera.bottom = -50;
@@ -437,7 +445,7 @@ function light() {
   dirLight.shadow.mapSize.height = 4096;
   scene.add(dirLight);
   var dirLight2 = new THREE.DirectionalLight(0xf0d9ff, 2);
-  dirLight2.position.set(0, 10, -40);
+  dirLight2.position.set(0, 100, 40);
   dirLight2.castShadow = true;
   dirLight2.shadow.camera.top = 50;
   dirLight2.shadow.camera.bottom = -50;
