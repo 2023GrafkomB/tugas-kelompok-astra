@@ -11,12 +11,18 @@ const world = new CANNON.World({
 })
 
 /* GEOMETRIES & MATERIALS THAT ARE REUSED */
-class SpikeGeo {
+class Spike {
   static radius = 1.0;
-  static height = 1.0;
+  static height = 0.5;
   static radialSegments = 4;
   static geometry = new THREE.ConeGeometry(this.radius, this.height, this.radialSegments);
+  static material = new THREE.MeshStandardMaterial({ color: 0xff0000 })
 }
+
+class PlatformData {
+  static placeholder =  new THREE.TextureLoader().load("./Textures/templategrid/TemplateGrid_albedo.png");
+}
+
 
 /**
  * Class for ThreeJs objects using a box body.
@@ -115,7 +121,7 @@ class PlayerObject extends ActiveObject {
 
     this.objectBody.quaternion.x = 0
     this.objectBody.quaternion.y = 0
-    this.objectBody.quaternion.z = 0
+    //this.objectBody.quaternion.z = 0
     this.MESH.quaternion.copy(this.objectBody.quaternion)
   }
 
@@ -150,11 +156,11 @@ class DeathBox extends ActiveObject {
    * - playerBox : Reference to player's CANNON Body.
    */
   constructor(initPos, playerBox) {
-    const size = SpikeGeo.radius
+    const size = Spike.height
     const truePosition = initPos
-    truePosition.x += size / 2
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-    const deathBox = new THREE.Mesh(SpikeGeo.geometry, material)
+    truePosition.x += Spike.radius / 2
+    const material = Spike.material
+    const deathBox = new THREE.Mesh(Spike.geometry, material)
     deathBox.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.785398) // So it's in the right angle
     super(deathBox, new CANNON.Vec3(size / 2, size / 2, size / 2), 1, truePosition)
     this.setPLayerCollisionEvent(playerBox)
@@ -187,12 +193,14 @@ class Platform extends ActiveObject {
     const size = 1
     const truePosition = initPos
     truePosition.x += length / 2
+    
     const geometry = new THREE.BoxGeometry(length, size, size)
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ffff })
+    const material = new THREE.MeshStandardMaterial({ map: PlatformData.placeholder })
     const platform = new THREE.Mesh(geometry, material)
     super(platform, new CANNON.Vec3(length / 2, size / 2, size / 2), 1, truePosition)
     this.objectBody.material = new CANNON.Material({ friction: 0, restitution: 0 })
 
+    wrapAndRepeatTexture(material.map, length)
     this.setPLayerCollisionEvent(playerBox)
   }
 
@@ -325,9 +333,8 @@ function animate() {
   controls.target = player.MESH.position
   controls.update()
   cameraDirection.subVectors(camera.position, controls.target);
-  cameraDirection.normalize().multiplyScalar(20);
+  // cameraDirection.normalize().multiplyScalar(20);
   camera.position.copy(cameraDirection.add(controls.target));
-  debug(controls.target)
 }
 animate()
 
@@ -340,15 +347,11 @@ animate()
  */
 function generateFloor(player) {
   // TEXTURES
-  var textureLoader = new THREE.TextureLoader();
-  var placeholder = textureLoader.load("./Textures/placeholder.png");
+
   var WIDTH = 80;
   var LENGTH = 80;
   var geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512);
-  var material = new THREE.MeshStandardMaterial({
-    map: placeholder
-  });
-  wrapAndRepeatTexture(material.map);
+  var material = new THREE.MeshStandardMaterial({transparent: true, opacity: 0.0});
   // const material = new THREE.MeshPhongMaterial({ map: placeholder})
   var floor = new THREE.Mesh(geometry, material);
   floor.receiveShadow = true;
@@ -381,9 +384,9 @@ function generateFloor(player) {
 
   return groundBody
 }
-function wrapAndRepeatTexture(map) {
+function wrapAndRepeatTexture(map, repeat) {
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
-  map.repeat.x = map.repeat.y = 10;
+  map.repeat.x = map.repeat.y = repeat;
 }
 function light() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.4));
