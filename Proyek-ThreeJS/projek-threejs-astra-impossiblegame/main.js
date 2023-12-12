@@ -415,7 +415,7 @@ function generateFloor(player) {
   var WIDTH = 80;
   var LENGTH = 80;
   var geometry = new THREE.PlaneGeometry(WIDTH, LENGTH, 512, 512);
-  var material = new THREE.MeshStandardMaterial({transparent: true, opacity: 0.0});
+  var material = new THREE.MeshStandardMaterial({transparent: true, opacity: 1.0});
   var floor = new THREE.Mesh(geometry, material);
   floor.receiveShadow = true;
 
